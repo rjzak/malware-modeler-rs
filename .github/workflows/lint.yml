@@ -1,0 +1,49 @@
+name: Lint
+on: [ push, pull_request ]
+permissions:
+  contents: read
+jobs:
+  clippy:
+    name: Cargo clippy & fmt
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+    - name: Setup Rust toolchain
+      run: rustup show && rustup update
+    - name: cargo fmt
+      run: cargo fmt -- --check
+    - name: cargo clippy
+      run: cargo clippy --all-features --tests -- -D warnings
+
+  udeps:
+    name: Unused dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install nightly and cargo-udeps
+        run: |
+          rustup update
+          rustup toolchain install nightly
+          sudo apt-get install -y wget
+          wget https://github.com/est31/cargo-udeps/releases/download/v0.1.57/cargo-udeps-v0.1.57-x86_64-unknown-linux-musl.tar.gz
+          tar -xzf cargo-udeps-v0.1.57-x86_64-unknown-linux-musl.tar.gz
+          mv cargo-udeps-v0.1.57-x86_64-unknown-linux-musl/cargo-udeps ~/.cargo/bin
+          cargo +nightly udeps
+
+  audit:
+    name: Cargo Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Cargo Audit
+        run: |
+          wget https://github.com/rustsec/rustsec/releases/download/cargo-audit%2Fv0.21.2/cargo-audit-x86_64-unknown-linux-musl-v0.21.2.tgz
+          tar -xzf cargo-audit-x86_64-unknown-linux-musl-v0.21.2.tgz
+          mv cargo-audit-x86_64-unknown-linux-musl-v0.21.2/cargo-audit ~/.cargo/bin/
+
+      - name: Run Cargo Audit
+        run: cargo audit

@@ -1,0 +1,33 @@
+name: Test
+on: [ push, pull_request ]
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      matrix:
+        platform:
+          - host: macos-latest
+            name: macOS
+          - host: ubuntu-latest
+            name: Linux
+          - host: windows-latest
+            name: Windows
+    runs-on: ${{ matrix.platform.host }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Update Rust toolchain on ${{ matrix.platform.name }}
+        run: rustup update
+      - name: Install extra tools (Windows)
+        uses: ChristopheLav/windows-sdk-install@v1
+        with:
+          version-sdk: 26100
+          features: 'OptionId.DesktopCPParm64'
+        if: matrix.platform.host == 'windows-latest'
+      - run: rustup target install aarch64-pc-windows-msvc
+        if: matrix.platform.host == 'windows-latest'
+      - name: cargo test on ${{ matrix.platform.name }}
+        run: cargo test
+      - name: cargo test on Windows arm64
+        run: cargo build --target=aarch64-pc-windows-msvc
+        if: matrix.platform.host == 'windows-latest'
